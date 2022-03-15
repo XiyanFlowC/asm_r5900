@@ -7,6 +7,9 @@
 #include "../../inscodec/xyutils.h"
 #include "../../inscodec/codec.c"
 
+// get next word, return the terminating char*
+// the buffer will recieve the word this function read.
+// 
 const char *get_next_word(const char *str, char *buffer) {
     while((*str == ' ' || *str == '\t') && *str != '\0') {
         ++str;
@@ -158,7 +161,7 @@ int disas(struct instr_t instr, ut32 offset, char *buffer) {
 
     *para = '\0';
     sprintf(buffer, "%s %s",mnemonic, para_buf);
-    return 1;
+    return 4;
 }
 
 int as(const char *str, ut32 offset, struct instr_t *result) {
