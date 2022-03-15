@@ -4,6 +4,7 @@
 #include <r_types.h>
 #include <r_util/r_strbuf.h>
 
+#include "../../inscodec/xyutils.h"
 #include "../../inscodec/codec.c"
 
 const char *get_next_word(const char *str, char *buffer) {
@@ -274,6 +275,7 @@ int as(const char *str, ut32 offset, struct instr_t *result) {
 #ifndef TEST
 int disassemble(RAsm *a, RAsmOp *op, const ut8 *buf, int len) {
     if (len < 4) return -1;
+    op->size = 4;
     ut32 instr;
     memcpy(&instr, buf, 4);
     char buffer[256];
@@ -314,7 +316,7 @@ RAsmPlugin r_asm_plugin_r5900 = {
     .init = &init,
     .endian = R_SYS_ENDIAN_LITTLE,
     .disassemble = &disassemble,
-    .assemble = &assemble
+    .assemble = &assemble,
 };
 
 #ifndef CORELIB
