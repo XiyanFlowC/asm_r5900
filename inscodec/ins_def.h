@@ -40,7 +40,7 @@ struct instr_def{
 	{IT_reg, "DADD", "$rd, $rs, $rt"},
 	{IT_imm, "DADDI", "$rt, $rs, #im"},
 	{IT_imm, "DADDIU", "$rt, $rs, #im"},
-	{IT_imm, "DADDU", "$rd, $rs, $rt"},
+	{IT_reg, "DADDU", "$rd, $rs, $rt"},
 	{IT_reg, "DIV", "$rs, $rt"},
 	{IT_reg, "DIVU", "$rs, $rt"},
 	{IT_reg, "DSLL", "$rd, $rt, %sa"},

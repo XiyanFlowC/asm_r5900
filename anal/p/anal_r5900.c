@@ -163,7 +163,7 @@ static int r5900_op(RAnal *anal, RAnalOp *op, ut64 addr, const ut8 *data, int le
         op->type = R_ANAL_OP_TYPE_LOAD;
         op->reg = gpr_names[tmp.rt];
         op->ireg = gpr_names[tmp.rs];
-        op->val = *(uint64_t*)&imm;
+        // op->val = *(uint64_t*)&imm;
         op->sign = true;
         break;
         case SB: // TODO: add esil and emu code
@@ -201,7 +201,8 @@ static int r5900_op(RAnal *anal, RAnalOp *op, ut64 addr, const ut8 *data, int le
         op->dst = r_anal_value_new();
         op->dst->reg = r_reg_get (anal->reg, gpr_names[tmp.rt], R_REG_TYPE_GPR);
         op->val = imm;
-        r_strbuf_setf (&op->esil, "4,0x%llX,0xffff,&,<<,%s,=", imm, gpr_names[tmp.rt]);
+        r_strbuf_setf (&op->esil, "16,0x%llX,0xffff,&,<<,%s,=", imm, gpr_names[tmp.rt]);
+        op->type = R_ANAL_OP_TYPE_MOV;
         break;
         case ADD:
         case ADDU:
@@ -219,8 +220,9 @@ static int r5900_op(RAnal *anal, RAnalOp *op, ut64 addr, const ut8 *data, int le
             op->type = R_ANAL_OP_TYPE_MOV;
             r_anal_value_free (op->src[1]);
             op->src[1] = NULL;
+            op->mnemonic = (char*)r_str_newf ("move %s, %s", gpr_names[tmp.rd], gpr_names[tmp.rs]);
         }
-        r_strbuf_setf (&op->esil, "%s,%s,%s,+,=",
+        r_strbuf_setf (&op->esil, "%s,%s,+,%s,=",
             gpr_names[tmp.rs],
             gpr_names[tmp.rt],
             gpr_names[tmp.rd]);// TODO: these instr should not share same logic
@@ -234,10 +236,10 @@ static int r5900_op(RAnal *anal, RAnalOp *op, ut64 addr, const ut8 *data, int le
         op->src[0]->reg = r_reg_get(anal->reg, gpr_names[tmp.rs], R_REG_TYPE_GPR);
         op->val = imm;
         op->type = R_ANAL_OP_TYPE_ADD;
-        r_strbuf_setf (&op->esil, "%s,%lld,%s,+,=",
-            gpr_names[tmp.rs],
+        r_strbuf_setf (&op->esil, "%lld,%s,+,%s,=",
             imm,
-            gpr_names[tmp.rd]);// TODO: these instr should not share same logic
+            gpr_names[tmp.rs],
+            gpr_names[tmp.rt]);// TODO: these instr should not share same logic
         break;
     }
 
