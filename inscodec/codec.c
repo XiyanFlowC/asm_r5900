@@ -101,10 +101,6 @@ void PrepareL(union uinstr instr);
 
 int LookUpOpcode(union uinstr instr);
 
-struct instr_def GetInstructionDefinitionByIndex(int option);
-
-unsigned int GetTemplateByIndex(int opcode);
-
 static int LookUpPrimaryOpcode(int opcode)
 {
 	return REVERSED;

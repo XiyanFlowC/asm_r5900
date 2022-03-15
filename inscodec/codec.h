@@ -347,6 +347,21 @@ extern "C" {
 		REVERSED, REVERSED, REVERSED, REVERSED, REVERSED, REVERSED, REVERSED, REVERSED,
 	};
 
+	/* Functions */
+	int LookUpOpcode(union uinstr instr);
+
+	unsigned int GetTemplateByIndex(int opcode);
+
+	void PrepareOpcodeBuffer();
+
+	struct instr_t DecodeInstruction(unsigned int instruction);
+
+	unsigned int EncodeInstruction(struct instr_t instruction);
+
+	struct instr_def GetInstructionDefinationByIndex(int option);
+
+	struct instr_def GetInstructionDefinationByName(const char* name);
+
 #define NUM_OPTION (sizeof(instrs) / sizeof(struct instr_def))
 
 #ifdef __cplusplus
