@@ -291,7 +291,7 @@ static int r5900_op(RAnal *anal, RAnalOp *op, ut64 addr, const ut8 *data, int le
         case DSLL32:
         r_strbuf_setf (&op->esil, "%s,%llu,<<,%s,=",
             gpr_names[tmp.rt],
-            tmp.sa,
+            (unsigned long long)tmp.sa,
             gpr_names[tmp.rd]);
         op->type = R_ANAL_OP_TYPE_SHL;
         break;
@@ -300,7 +300,7 @@ static int r5900_op(RAnal *anal, RAnalOp *op, ut64 addr, const ut8 *data, int le
         case DSRL32:
         r_strbuf_setf (&op->esil, "%s,%llu,>>,%s,=",
             gpr_names[tmp.rt],
-            tmp.sa,
+            (unsigned long long)tmp.sa,
             gpr_names[tmp.rd]);
         op->type = R_ANAL_OP_TYPE_SHR;
         break;
@@ -309,7 +309,7 @@ static int r5900_op(RAnal *anal, RAnalOp *op, ut64 addr, const ut8 *data, int le
         case DSRA32:
         r_strbuf_setf (&op->esil, "%s,%llu,>>,%s,=",
             gpr_names[tmp.rt],
-            tmp.sa,
+            (unsigned long long)tmp.sa,
             gpr_names[tmp.rd]);
         op->type = R_ANAL_OP_TYPE_SAR;
         break;
@@ -341,10 +341,10 @@ static int r5900_op(RAnal *anal, RAnalOp *op, ut64 addr, const ut8 *data, int le
         R5900_HIARITH(XOR,^)
         break;
         case PADDUW:
-        if(tmp.rt == 0) {// padduw rd, rs, zero (qmove rd, rs)
+        if(tmp.rt == 0) { // padduw rd, rs, zero (qmove rd, rs)
             op->type = R_ANAL_OP_TYPE_MOV;
             r_strbuf_setf (&op->esil, "%sh,%sh,=,%sh,%sh,=",
-                tmp.rs, tmp.rd, tmp.rs, tmp.rd);
+                gpr_names[tmp.rs], gpr_names[tmp.rd], gpr_names[tmp.rs], gpr_names[tmp.rd]);
         }
         op->type = R_ANAL_OP_TYPE_ADD;
         break;
@@ -391,6 +391,9 @@ static int r5900_op(RAnal *anal, RAnalOp *op, ut64 addr, const ut8 *data, int le
         op->src[0]->reg = r_reg_get (anal->reg, gpr_names[tmp.rd], R_REG_TYPE_GPR);
         op->type = R_ANAL_OP_TYPE_MOV;
         r_strbuf_setf (&op->esil, "%s,lo,=", gpr_names[tmp.rd]);
+        break;
+        case SYNC:
+        op->type = R_ANAL_OP_TYPE_SYNC;
         break;
     }
 
