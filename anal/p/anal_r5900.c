@@ -390,7 +390,39 @@ static int r5900_op(RAnal *anal, RAnalOp *op, ut64 addr, const ut8 *data, int le
         op->dst->reg = r_reg_get (anal->reg, "lo", R_REG_TYPE_GPR);
         op->src[0]->reg = r_reg_get (anal->reg, gpr_names[tmp.rd], R_REG_TYPE_GPR);
         op->type = R_ANAL_OP_TYPE_MOV;
-        r_strbuf_setf (&op->esil, "%s,lo,=", gpr_names[tmp.rd]);
+        r_strbuf_setf (&op->esil, "%s,loh,=", gpr_names[tmp.rd]);
+        break;
+        case MFHI1:
+        op->dst = r_anal_value_new();
+        op->src[0] = r_anal_value_new();
+        op->dst->reg = r_reg_get (anal->reg, gpr_names[tmp.rd], R_REG_TYPE_GPR);
+        op->src[0]->reg = r_reg_get (anal->reg, "hih", R_REG_TYPE_GPR);
+        op->type = R_ANAL_OP_TYPE_MOV;
+        r_strbuf_setf (&op->esil, "hih,%s,=", gpr_names[tmp.rd]);
+        break;
+        case MFLO1:
+        op->dst = r_anal_value_new();
+        op->src[0] = r_anal_value_new();
+        op->dst->reg = r_reg_get (anal->reg, gpr_names[tmp.rd], R_REG_TYPE_GPR);
+        op->src[0]->reg = r_reg_get (anal->reg, "loh", R_REG_TYPE_GPR);
+        op->type = R_ANAL_OP_TYPE_MOV;
+        r_strbuf_setf (&op->esil, "loh,%s,=", gpr_names[tmp.rd]);
+        break;
+        case MTHI1:
+        op->dst = r_anal_value_new();
+        op->src[0] = r_anal_value_new();
+        op->dst->reg = r_reg_get (anal->reg, "hih", R_REG_TYPE_GPR);
+        op->src[0]->reg = r_reg_get (anal->reg, gpr_names[tmp.rd], R_REG_TYPE_GPR);
+        op->type = R_ANAL_OP_TYPE_MOV;
+        r_strbuf_setf (&op->esil, "%s,hih,=", gpr_names[tmp.rd]);
+        break;
+        case MTLO1:
+        op->dst = r_anal_value_new();
+        op->src[0] = r_anal_value_new();
+        op->dst->reg = r_reg_get (anal->reg, "loh", R_REG_TYPE_GPR);
+        op->src[0]->reg = r_reg_get (anal->reg, gpr_names[tmp.rd], R_REG_TYPE_GPR);
+        op->type = R_ANAL_OP_TYPE_MOV;
+        r_strbuf_setf (&op->esil, "%s,loh,=", gpr_names[tmp.rd]);
         break;
         case SYNC:
         op->type = R_ANAL_OP_TYPE_SYNC;
@@ -403,6 +435,14 @@ static int r5900_op(RAnal *anal, RAnalOp *op, ut64 addr, const ut8 *data, int le
 #undef R5900_HIARITH
 
 static bool set_r5900_reg_profile(RAnal* anal) {
+    /*
+    * NOTE: MIPS R5900 (aka TX79 or Emotion Engine) holds so-called 128-bit GPRs.
+    * Bust the higher 64-bit is seperate with the lower 64-bit, so the one "128-bit" GPR
+    * is actually consisted by two 64-bit GPRs. I use xxxh to mark the hi reg, since no
+    * carry will be operated to the hi 64-bit when lo 64-bit reg overflow, the higher GPRs
+    * actually holds thier own ALU and can only be accessed by "Multimedia instructions",
+    * which are used for SIMD operations.
+    */
     const char *p =
     "=PC    pc\n"
     "=SP    sp\n"
@@ -474,7 +514,12 @@ static bool set_r5900_reg_profile(RAnal* anal) {
     "gpr	fph	.64	472	0\n"
     "gpr	ra	.64	480	0\n" // 32 bits ?
 //    "gpr    rah .64 344 0\n"
-    "gpr	pc	.64	488	0\n"; // 32 bits ?
+    "gpr	pc	.64	488	0\n" // 32 bits ?
+    // hi & lo - are they gpr?
+    "gpr    lo  .64 496 0\n"
+    "gpr    loh .64 504 0\n"
+    "gpr    hi  .64 512 0\n"
+    "gpr    hih .64 520 0\n";
     return r_reg_set_profile_string(anal->reg, p);
 }
 
