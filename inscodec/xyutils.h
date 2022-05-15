@@ -1,7 +1,19 @@
+/**
+ * @file xyutils.h
+ * @author xiyan
+ * @brief Some utils i used
+ * @version 0.5
+ * @date 2022-03-29
+ * 
+ * @copyright Licensed with MIT License
+ * 
+ */
 #ifndef XY_UTILS_H__
 #define XY_UTILS_H__
 
 #include <string.h>
+#include <stdio.h>
+#include <stdlib.h>
 
 #ifdef __cplusplus
 extern "C"
@@ -20,11 +32,13 @@ static char *str_first_not(const char *src, const char ch)
 
 static char *str_trim_end(char *src)
 {
+	char *ret = src;
 	if(!*src) return NULL;
 	while(*src != '\0') ++src;
 	--src;
 	while(*src == '\t' || *src == ' ') --src;
 	*(++src) = '\0';
+	return ret;
 }
 
 // 获取第一个指定的ch的字符位置
@@ -199,6 +213,7 @@ static int parse_int(long long *result, const char *src)
 
 static char *strupr(char *str)
 {
+	char *ret = str;
 	while(*str != '\0')
 	{
 		if (*str >= 'a' && *str <= 'z')
@@ -208,10 +223,12 @@ static char *strupr(char *str)
 
 		str++;
 	}
+	return ret;
 }
 
 static char *strlwr(char *str)
 {
+	char *ret = str;
 	while(*str != '\0')
 	{
 		if (*str >= 'A' && *str <= 'Z')
@@ -221,6 +238,7 @@ static char *strlwr(char *str)
 
 		str++;
 	}
+	return ret;
 }
 
 #ifdef __cplusplus

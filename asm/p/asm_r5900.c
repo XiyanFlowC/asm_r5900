@@ -149,9 +149,9 @@ int as(const char *str, ut32 offset, struct instr_t *result) {
     
     int option = -1;
     strupr(buffer);
-    for (int i = 0; i < NUM_OPTION; ++i)
+    for (int i = 0; i < OPTION_COUNT; ++i)
 	{
-		if (strcmp(instrs[i].name,  buffer) == 0)
+		if (strcmp(instructions[i].name,  buffer) == 0)
 			option = i;
 	}
     if(option == -1) return -17;
