@@ -264,7 +264,7 @@ static int C0OpcodeLookUpTable[] =
 {
 	RESERVED, TLBR, TLBWI, RESERVED, RESERVED, RESERVED, TLBWR, RESERVED,
 	TLBP, RESERVED, RESERVED, RESERVED, RESERVED, RESERVED, RESERVED, RESERVED,
-	EI, DI, RESERVED, RESERVED, RESERVED, RESERVED, RESERVED, RESERVED, /* May EI & DI located here... */
+	RESERVED, RESERVED, RESERVED, RESERVED, RESERVED, RESERVED, RESERVED, RESERVED, /* May EI & DI located here... */
 	ERET, RESERVED, RESERVED, RESERVED, RESERVED, RESERVED, RESERVED, RESERVED,
 	RESERVED, RESERVED, RESERVED, RESERVED, RESERVED, RESERVED, RESERVED, RESERVED,
 	RESERVED, RESERVED, RESERVED, RESERVED, RESERVED, RESERVED, RESERVED, RESERVED,
@@ -731,7 +731,7 @@ void PrepareC0(union uinstr instr)
 	for (int i = 0; i < 64; ++i)
 	{
 		if (C0OpcodeLookUpTable[i] == RESERVED) continue;
-		instr.rtype.rt = i;
+		instr.rtype.funct = i;
 		opcode_buffer[C0OpcodeLookUpTable[i]] = instr.code;
 	}
 }
@@ -931,7 +931,7 @@ int LookUpBC0(union uinstr instr)
 
 int LookUpC0(union uinstr instr)
 {
-	return C0OpcodeLookUpTable[instr.rtype.rs];
+	return C0OpcodeLookUpTable[instr.rtype.funct];
 }
 
 int LookUpCOP1(union uinstr instr)

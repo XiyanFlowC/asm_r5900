@@ -19,7 +19,7 @@ break;
 case AND:
 ans.rtype.rd = instruction.rd;
 ans.rtype.rs = instruction.rs;
-ans.rtype.rd = instruction.rd;
+ans.rtype.rt = instruction.rt;
 break;
 case ANDI:
 ans.rtype.rt = instruction.rt;
