@@ -49,7 +49,9 @@ int _get_target_(const char *str) {
     }
 }
 
-int disas(struct instr_t instr, ut32 offset, char *buffer) {
+int r5900_op(RAnalOp *op, ut64 addr, struct instr_t tmp);
+
+int disas(struct instr_t instr, ut32 offset, RAnalOp *op) {
     char mnemonic[128];
     char para_buf[512];
     struct instr_def def = GetInstructionDefinitionByIndex(instr.opcode);
@@ -138,7 +140,9 @@ int disas(struct instr_t instr, ut32 offset, char *buffer) {
     }
 
     *para = '\0';
-    sprintf(buffer, "%s %s",mnemonic, para_buf);
+    //sprintf(buffer, "%s %s",mnemonic, para_buf);
+    if (*orip == '_') op->mnemonic = r_str_newf("%s", mnemonic);
+    else op->mnemonic = r_str_newf("%s %s", mnemonic, para_buf);
     return 4;
 }
 
@@ -254,56 +258,150 @@ int as(const char *str, ut32 offset, struct instr_t *result) {
 }
 
 #ifndef TEST
-int disassemble(RAsm *a, RAsmOp *op, const ut8 *buf, int len) {
+static bool decode(RArchSession *a, RAnalOp *op, RArchDecodeMask mask) {
+    ut64 offset = op->addr;
+    ut8 *buf = op->bytes;
+    int len = op->size;
+
     if (len < 4) return -1;
     op->size = 4;
     ut32 instr;
     memcpy(&instr, buf, 4);
-    char buffer[256];
 
-    int ret = op->size = disas(DecodeInstruction(instr), a->pc, buffer);
-    if (ret) {
-        r_strbuf_set(&op->buf_asm, buffer);
-    }
-    return 4;
+    disas(DecodeInstruction(instr), offset, op);
+    r5900_op(op, offset, DecodeInstruction(instr));
+    return true;
 }
 
-int assemble(RAsm *a, RAsmOp *op, const char *buf) {
+static bool encode(RArchSession *a, RAnalOp *op, RArchEncodeMask mask) {
     struct instr_t tmp;
-    int ret = as(buf, a->pc, &tmp);
+    int ret = as(op->mnemonic, op->addr, &tmp);
     if(ret) {
-        return -1;
+        return false;
     }
 
     ut32 result = EncodeInstruction(tmp);
-    ut8 *opbuf = (ut8*)r_strbuf_get (&op->buf);
-    memcpy(opbuf, &result, 4);
+    free(op->bytes);
+    op->bytes = r_mem_dup(&result, 4);
+    op->size = 4;
+    return true;
+}
+
+bool init(RArchSession *as) {
+    R_RETURN_VAL_IF_FAIL (as, false);
+
+    PrepareOpcodeBuffer();
+    return true;
+}
+
+static char *regs(RArchSession *as) {
+    return strdup(
+    "=PC    pc\n"
+    "=SP    sp\n"
+    "=BP    fp\n"
+    "=A0    a0\n"
+    "=A1    a1\n"
+    "=A2    a2\n"
+    "=A3    a3\n"
+    "=SN    v0\n"
+    "=R0    v0\n"
+    "=R1    v1\n"
+    "gpr    zero    .64 0   0\n"
+    "gpr    zeroh   .64 8   0\n"
+    "gpr    at  .64 16  0\n"
+    "gpr    ath .64 24  0\n"
+    "gpr    v0  .64 32  0\n"
+    "gpr    v0h .64 40  0\n"
+    "gpr    v1  .64 48  0\n"
+    "gpr    v1h .64 56  0\n"
+    "gpr    a0  .64 64  0\n"
+    "gpr    a0h .64 72  0\n"
+    "gpr    a1  .64 80  0\n"
+    "gpr    a1h .64 88  0\n"
+    "gpr    a2  .64 96  0\n"
+    "gpr    a2h .64 104 0\n"
+    "gpr    a3  .64 112 0\n"
+    "gpr    a3h .64 120 0\n"
+    "gpr    t0  .64 128 0\n"
+    "gpr    t0h .64 136 0\n"
+    "gpr    t1  .64 144 0\n"
+    "gpr    t1h .64 152 0\n"
+    "gpr    t2  .64 160 0\n"
+    "gpr    t2h .64 168 0\n"
+    "gpr    t3  .64 176 0\n"
+    "gpr    t3h .64 184 0\n"
+    "gpr    t4  .64 192 0\n"
+    "gpr    t4h .64 200 0\n"
+    "gpr    t5  .64 208 0\n"
+    "gpr    t5h .64 216 0\n"
+    "gpr    t6  .64 224 0\n"
+    "gpr    t6h .64 232 0\n"
+    "gpr    t7  .64 240 0\n"
+    "gpr    t7h .64 248 0\n"
+    "gpr    s0  .64 256 0\n"
+    "gpr    s0h .64 264 0\n"
+    "gpr    s1  .64 272 0\n"
+    "gpr    s1h .64 280 0\n"
+    "gpr    s2  .64 288 0\n"
+    "gpr    s2h .64 296 0\n"
+    "gpr    s3  .64 304 0\n"
+    "gpr    s3h .64 312 0\n"
+    "gpr    s4  .64 320 0\n"
+    "gpr    s4h .64 328 0\n"
+    "gpr    s5  .64 336 0\n"
+    "gpr    s5h .64 344 0\n"
+    "gpr    s6  .64 352 0\n"
+    "gpr    s6h .64 360 0\n"
+    "gpr    s7  .64 368 0\n"
+    "gpr    s7h .64 376 0\n"
+    "gpr    t8  .64 384 0\n"
+    "gpr    t8h .64 392 0\n"
+    "gpr    k0  .64 400 0\n"
+    "gpr    k0h .64 408 0\n"
+    "gpr    k1  .64 416 0\n"
+    "gpr    k1h .64 424 0\n"
+    "gpr    gp  .64 432 0\n"
+    "gpr    gph .64 440 0\n"
+    "gpr    sp  .64 448 0\n"
+    "gpr    sph .64 456 0\n"
+    "gpr    fp  .64 464 0\n"
+    "gpr    fph .64 472 0\n"
+    "gpr    ra  .64 480 0\n"
+    "gpr    rah .64 488 0\n"
+    "gpr    pc  .64 496 0\n"
+    "gpr    pch .64 504 0\n"
+    "gpr    lo  .64 512 0\n"
+    "gpr    loh .64 520 0\n"
+    "gpr    hi  .64 528 0\n"
+    "gpr    hih .64 536 0\n");
+}
+
+static int r5900_archinfo(RArchSession *as, ut32 query) {
     return 4;
 }
 
-bool init(void *user) {
-    PrepareOpcodeBuffer();
-    return true;
-    // puts(*gpr_names);
-}
-
-RAsmPlugin r_asm_plugin_r5900 = {
-    .name = "r5900",
-    .arch = "r5900",
-    .license = "MIT",
-    .author = "xiyan",
-    .bits = 32,
-    .desc = "r5900(aka. TX79) little endian assembly plugin",
-    .init = &init,
+RArchPlugin r_arch_plugin_r5900 = {
+    .meta = {
+        .name = "r5900",
+        .author = "xiyan",
+        .license = "MIT",
+        .desc = "r5900(aka. TX79) little endian assembly plugin"
+    },
+    .arch = "mips",
+    .cpus = "r5900",
+    .bits = 64,
+    .regs = regs,
+    .info = r5900_archinfo,
+    .encode = encode,
+    .decode = decode,
+    .init = init,
     .endian = R_SYS_ENDIAN_LITTLE,
-    .disassemble = &disassemble,
-    .assemble = &assemble,
 };
 
 #ifndef CORELIB
-struct r_lib_struct_t radare_plugin = {
-    .type = R_LIB_TYPE_ASM,
-    .data = &r_asm_plugin_r5900,
+R_API RLibStruct radare_plugin = {
+    .type = R_LIB_TYPE_ARCH,
+    .data = &r_arch_plugin_r5900,
     .version = R2_VERSION
 };
 #endif

@@ -1,9 +1,9 @@
-NAME=asm_r5900
+NAME=arch_r5900
 R2_PLUGIN_PATH=$(shell r2 -H R2_USER_PLUGINS)
 LIBEXT=$(shell r2 -H LIBEXT)
 CFLAGS=-g -fPIC $(shell pkg-config --cflags r_anal)
 LDFLAGS=-shared $(shell pkg-config --libs r_anal)
-OBJS=$(NAME).o
+OBJS=$(NAME).o anal.o
 LIB=$(NAME).$(LIBEXT)
 
 all: $(LIB)
@@ -15,7 +15,7 @@ $(LIB): $(OBJS)
 	$(CC) $(CFLAGS) $(LDFLAGS) $(OBJS) -o $(LIB)
 
 install:
-	cp -f asm_r5900.$(LIBEXT) $(R2_PLUGIN_PATH)
+	cp -f arch_r5900.$(LIBEXT) $(R2_PLUGIN_PATH)
 
 uninstall:
-	rm -f $(R2_PLUGIN_PATH)/asm_r5900.$(SO_EXT)
+	rm -f $(R2_PLUGIN_PATH)/arch_r5900.$(SO_EXT)

@@ -6,12 +6,12 @@
 #include "../../inscodec/codec.c"
 
 #define R5900_ARITH(op_type, ch) \
-    op->dst = r_anal_value_new();\
-    op->src[0] = r_anal_value_new();\
-    op->src[1] = r_anal_value_new();\
-    op->dst->reg = r_reg_get(anal->reg, gpr_names[tmp.rd], R_REG_TYPE_GPR);\
-    op->src[0]->reg = r_reg_get(anal->reg, gpr_names[tmp.rs], R_REG_TYPE_GPR);\
-    op->src[1]->reg = r_reg_get(anal->reg, gpr_names[tmp.rt], R_REG_TYPE_GPR);\
+    op->dsts = r_anal_value_new();\
+    op->srcs[0] = r_anal_value_new();\
+    op->srcs[1] = r_anal_value_new();\
+    op->dsts->reg = r_reg_get(anal->reg, gpr_names[tmp.rd], R_REG_TYPE_GPR);\
+    op->srcs[0]->reg = r_reg_get(anal->reg, gpr_names[tmp.rs], R_REG_TYPE_GPR);\
+    op->srcs[1]->reg = r_reg_get(anal->reg, gpr_names[tmp.rt], R_REG_TYPE_GPR);\
     op->type = R_ANAL_OP_TYPE_##op_type;\
     r_strbuf_setf (&op->esil, "%s,%s,"#ch",%s,=",\
         gpr_names[tmp.rs],\
@@ -21,15 +21,15 @@
 //static char regbuf[8]; // use to make hi reg name str, e.g. v0h, a0h, ...
 
 #define R5900_HIARITH(op_type, ch) \
-/*    op->dst = r_anal_value_new();// TODO: The dst can't be two register, how did others deal with 128-bit SIMD?\ 
-    op->src[0] = r_anal_value_new();\
-    op->src[1] = r_anal_value_new();\
+/*    op->dsts = r_anal_value_new();// TODO: The dsts can't be two register, how did others deal with 128-bit SIMD?\ 
+    op->srcs[0] = r_anal_value_new();\
+    op->srcs[1] = r_anal_value_new();\
     snprintf(regbuf, 8, "%sh", gpr_names[tmp.rd]);\
-    op->dst->reg = r_reg_get(anal->reg, regbuf, R_REG_TYPE_GPR);\
+    op->dsts->reg = r_reg_get(anal->reg, regbuf, R_REG_TYPE_GPR);\
     snprintf(regbuf, 8, "%sh", gpr_names[tmp.rs]);\
-    op->src[0]->reg = r_reg_get(anal->reg, regbuf, R_REG_TYPE_GPR);\
+    op->srcs[0]->reg = r_reg_get(anal->reg, regbuf, R_REG_TYPE_GPR);\
     snprintf(regbuf, 8, "%sh", gpr_names[tmp.rt]);\
-    op->src[1]->reg = r_reg_get(anal->reg, regbuf, R_REG_TYPE_GPR);*/\
+    op->srcs[1]->reg = r_reg_get(anal->reg, regbuf, R_REG_TYPE_GPR);*/\
     op->type = R_ANAL_OP_TYPE_##op_type;\
     r_strbuf_setf (&op->esil, "%sh,%sh,"#ch",%sh,=",\
         gpr_names[tmp.rs],\
@@ -89,10 +89,10 @@ static int r5900_op(RAnal *anal, RAnalOp *op, ut64 addr, const ut8 *data, int le
         }
         
         op->delay = 1;
-        op->dst = r_anal_value_new();
-        op->src[0] = r_anal_value_new();
-        op->dst->reg = r_reg_get (anal->reg, "pc",  R_REG_TYPE_GPR);
-        op->src[0]->reg = r_reg_get (anal->reg, gpr_names[tmp.rs], R_REG_TYPE_GPR);
+        op->dsts = r_anal_value_new();
+        op->srcs[0] = r_anal_value_new();
+        op->dsts->reg = r_reg_get (anal->reg, "pc",  R_REG_TYPE_GPR);
+        op->srcs[0]->reg = r_reg_get (anal->reg, gpr_names[tmp.rs], R_REG_TYPE_GPR);
         r_strbuf_set (&op->esil, gpr_names[tmp.rs]);
         r_strbuf_append (&op->esil, ",pc,:=");
         // op->reg = gpr_names[tmp.rs];
@@ -119,20 +119,20 @@ static int r5900_op(RAnal *anal, RAnalOp *op, ut64 addr, const ut8 *data, int le
         op->delay = 1;
         op->jump = addr + 4 + imm;
         op->fail = addr + 8;
-        op->dst = r_anal_value_new();
-        op->src[0] = r_anal_value_new();
-        op->src[1] = r_anal_value_new();
-        op->dst->reg = r_reg_get (anal->reg, "pc", R_REG_TYPE_GPR);
-        op->src[0]->reg = r_reg_get (anal->reg, gpr_names[tmp.rs], R_REG_TYPE_GPR);
-        op->src[1]->imm = imm;
-        op->src[1]->type = R_ANAL_VAL_IMM; // default by imm
+        op->dsts = r_anal_value_new();
+        op->srcs[0] = r_anal_value_new();
+        op->srcs[1] = r_anal_value_new();
+        op->dsts->reg = r_reg_get (anal->reg, "pc", R_REG_TYPE_GPR);
+        op->srcs[0]->reg = r_reg_get (anal->reg, gpr_names[tmp.rs], R_REG_TYPE_GPR);
+        op->srcs[1]->imm = imm;
+        op->srcs[1]->type = R_ANAL_VAL_IMM; // default by imm
         switch(opcode) { // TODO: Add emulation codes
             case BEQL:
             op->delay = 0;
             case BEQ:
             op->cond = R_ANAL_COND_EQ;
-            op->src[1]->reg = r_reg_get (anal->reg, gpr_names[tmp.rt], R_REG_TYPE_GPR);
-            op->src[1]->type = R_ANAL_VAL_REG; // the value is reg
+            op->srcs[1]->reg = r_reg_get (anal->reg, gpr_names[tmp.rt], R_REG_TYPE_GPR);
+            op->srcs[1]->type = R_ANAL_VAL_REG; // the value is reg
             break;
             case BGEZALL:
             op->delay = 0;
@@ -165,8 +165,8 @@ static int r5900_op(RAnal *anal, RAnalOp *op, ut64 addr, const ut8 *data, int le
             op->delay = 0;
             case BNE:
             op->cond = R_ANAL_COND_NE;
-            op->src[1]->reg = r_reg_get (anal->reg, gpr_names[tmp.rt], R_REG_TYPE_GPR);
-            op->src[1]->type = R_ANAL_VAL_REG;
+            op->srcs[1]->reg = r_reg_get (anal->reg, gpr_names[tmp.rt], R_REG_TYPE_GPR);
+            op->srcs[1]->type = R_ANAL_VAL_REG;
             break;
         }
         break;
@@ -201,12 +201,12 @@ static int r5900_op(RAnal *anal, RAnalOp *op, ut64 addr, const ut8 *data, int le
         else {
             op->ptr = imm + r_reg_getv(anal->reg, gpr_names[tmp.rs]);
         }
-        op->dst = r_anal_value_new();
-        op->src[0] = r_anal_value_new();
-        op->dst->reg = r_reg_get (anal->reg, gpr_names[tmp.rt], R_REG_TYPE_GPR);
-        op->src[0]->reg = r_reg_get (anal->reg, gpr_names[tmp.rs], R_REG_TYPE_GPR);
-        op->src[0]->delta = imm;
-        op->src[0]->type = R_ANAL_VAL_MEM;
+        op->dsts = r_anal_value_new();
+        op->srcs[0] = r_anal_value_new();
+        op->dsts->reg = r_reg_get (anal->reg, gpr_names[tmp.rt], R_REG_TYPE_GPR);
+        op->srcs[0]->reg = r_reg_get (anal->reg, gpr_names[tmp.rs], R_REG_TYPE_GPR);
+        op->srcs[0]->delta = imm;
+        op->srcs[0]->type = R_ANAL_VAL_MEM;
         // r_strbuf_set (&op->esil, "")
         op->type = R_ANAL_OP_TYPE_LOAD;
         // op->reg = gpr_names[tmp.rt]; // do these lines really affect?
@@ -238,24 +238,24 @@ static int r5900_op(RAnal *anal, RAnalOp *op, ut64 addr, const ut8 *data, int le
         else {
             op->ptr = imm + r_reg_getv(anal->reg, gpr_names[tmp.rs]);
         }
-        op->dst = r_anal_value_new();
-        op->src[0] = r_anal_value_new();
-        op->dst->delta = imm;
-        op->dst->reg = r_reg_get (anal->reg, gpr_names[tmp.rs], R_REG_TYPE_GPR);
-        op->src[0]->reg = r_reg_get (anal->reg, gpr_names[tmp.rt], R_REG_TYPE_GPR);
-        op->dst->type = R_ANAL_VAL_MEM;
+        op->dsts = r_anal_value_new();
+        op->srcs[0] = r_anal_value_new();
+        op->dsts->delta = imm;
+        op->dsts->reg = r_reg_get (anal->reg, gpr_names[tmp.rs], R_REG_TYPE_GPR);
+        op->srcs[0]->reg = r_reg_get (anal->reg, gpr_names[tmp.rt], R_REG_TYPE_GPR);
+        op->dsts->type = R_ANAL_VAL_MEM;
         // r_strbuf_set (&op->esil, "")
         op->type = R_ANAL_OP_TYPE_STORE;
         break;
 
         /* arithmetic */
         case LUI:
-        op->dst = r_anal_value_new();
-        op->src[0] = r_anal_value_new();
-        op->dst->reg = r_reg_get (anal->reg, gpr_names[tmp.rt], R_REG_TYPE_GPR);
-        op->dst->type = R_ANAL_VAL_REG;
-        op->src[0]->imm = imm << 16;
-        op->src[0]->type = R_ANAL_VAL_IMM;
+        op->dsts = r_anal_value_new();
+        op->srcs[0] = r_anal_value_new();
+        op->dsts->reg = r_reg_get (anal->reg, gpr_names[tmp.rt], R_REG_TYPE_GPR);
+        op->dsts->type = R_ANAL_VAL_REG;
+        op->srcs[0]->imm = imm << 16;
+        op->srcs[0]->type = R_ANAL_VAL_IMM;
         r_strbuf_setf (&op->esil, "16,0x%llX,0xffff,&,<<,%s,=", imm, gpr_names[tmp.rt]);
         op->type = R_ANAL_OP_TYPE_MOV;
         break;
@@ -267,19 +267,19 @@ static int r5900_op(RAnal *anal, RAnalOp *op, ut64 addr, const ut8 *data, int le
 
         // if (tmp.opcode == DADDU && tmp.rt == 0) { // move ( daddu rd, rs, zero)
         //     op->type = R_ANAL_OP_TYPE_MOV;
-        //     r_anal_value_free (op->src[1]);
-        //     op->src[1] = NULL;
+        //     r_anal_value_free (op->srcs[1]);
+        //     op->srcs[1] = NULL;
         //     // op->mnemonic = (char*)r_str_newf ("move %s, %s", gpr_names[tmp.rd], gpr_names[tmp.rs]);
         // }
         break;
         case ADDIU:
         case ADDI:
-        op->dst = r_anal_value_new();
-        op->src[0] = r_anal_value_new();
-        op->src[1] = r_anal_value_new();
-        op->dst->reg = r_reg_get(anal->reg, gpr_names[tmp.rd], R_REG_TYPE_GPR);
-        op->src[0]->reg = r_reg_get(anal->reg, gpr_names[tmp.rs], R_REG_TYPE_GPR);
-        op->src[1]->imm = imm;
+        op->dsts = r_anal_value_new();
+        op->srcs[0] = r_anal_value_new();
+        op->srcs[1] = r_anal_value_new();
+        op->dsts->reg = r_reg_get(anal->reg, gpr_names[tmp.rd], R_REG_TYPE_GPR);
+        op->srcs[0]->reg = r_reg_get(anal->reg, gpr_names[tmp.rs], R_REG_TYPE_GPR);
+        op->srcs[1]->imm = imm;
         op->type = R_ANAL_OP_TYPE_ADD;
         r_strbuf_setf (&op->esil, "%lld,%s,+,%s,=",
             imm,
@@ -287,12 +287,12 @@ static int r5900_op(RAnal *anal, RAnalOp *op, ut64 addr, const ut8 *data, int le
             gpr_names[tmp.rt]);// TODO: these instr should not share same logic
         break;
         case ORI:
-        op->dst = r_anal_value_new();
-        op->src[0] = r_anal_value_new();
-        op->src[1] = r_anal_value_new();
-        op->dst->reg = r_reg_get(anal->reg, gpr_names[tmp.rd], R_REG_TYPE_GPR);
-        op->src[0]->reg = r_reg_get(anal->reg, gpr_names[tmp.rs], R_REG_TYPE_GPR);
-        op->src[1]->imm = imm;
+        op->dsts = r_anal_value_new();
+        op->srcs[0] = r_anal_value_new();
+        op->srcs[1] = r_anal_value_new();
+        op->dsts->reg = r_reg_get(anal->reg, gpr_names[tmp.rd], R_REG_TYPE_GPR);
+        op->srcs[0]->reg = r_reg_get(anal->reg, gpr_names[tmp.rs], R_REG_TYPE_GPR);
+        op->srcs[1]->imm = imm;
         op->type = R_ANAL_OP_TYPE_OR;
         r_strbuf_setf (&op->esil, "%lld,%s,|,%s,=",
             imm,
@@ -300,12 +300,12 @@ static int r5900_op(RAnal *anal, RAnalOp *op, ut64 addr, const ut8 *data, int le
             gpr_names[tmp.rt]);
         break;
         case XORI:
-        op->dst = r_anal_value_new();
-        op->src[0] = r_anal_value_new();
-        op->src[1] = r_anal_value_new();
-        op->dst->reg = r_reg_get(anal->reg, gpr_names[tmp.rd], R_REG_TYPE_GPR);
-        op->src[0]->reg = r_reg_get(anal->reg, gpr_names[tmp.rs], R_REG_TYPE_GPR);
-        op->src[1]->imm = imm;
+        op->dsts = r_anal_value_new();
+        op->srcs[0] = r_anal_value_new();
+        op->srcs[1] = r_anal_value_new();
+        op->dsts->reg = r_reg_get(anal->reg, gpr_names[tmp.rd], R_REG_TYPE_GPR);
+        op->srcs[0]->reg = r_reg_get(anal->reg, gpr_names[tmp.rs], R_REG_TYPE_GPR);
+        op->srcs[1]->imm = imm;
         op->type = R_ANAL_OP_TYPE_XOR;
         r_strbuf_setf (&op->esil, "%lld,%s,^,%s,=",
             imm,
@@ -313,12 +313,12 @@ static int r5900_op(RAnal *anal, RAnalOp *op, ut64 addr, const ut8 *data, int le
             gpr_names[tmp.rt]);
         break;
         case ANDI:
-        op->dst = r_anal_value_new();
-        op->src[0] = r_anal_value_new();
-        op->src[1] = r_anal_value_new();
-        op->dst->reg = r_reg_get(anal->reg, gpr_names[tmp.rd], R_REG_TYPE_GPR);
-        op->src[0]->reg = r_reg_get(anal->reg, gpr_names[tmp.rs], R_REG_TYPE_GPR);
-        op->src[1]->imm = imm;
+        op->dsts = r_anal_value_new();
+        op->srcs[0] = r_anal_value_new();
+        op->srcs[1] = r_anal_value_new();
+        op->dsts->reg = r_reg_get(anal->reg, gpr_names[tmp.rd], R_REG_TYPE_GPR);
+        op->srcs[0]->reg = r_reg_get(anal->reg, gpr_names[tmp.rs], R_REG_TYPE_GPR);
+        op->srcs[1]->imm = imm;
         op->type = R_ANAL_OP_TYPE_AND;
         r_strbuf_setf (&op->esil, "%lld,%s,&,%s,=",
             imm,
@@ -400,73 +400,73 @@ static int r5900_op(RAnal *anal, RAnalOp *op, ut64 addr, const ut8 *data, int le
         //     gpr_names[tmp.rs], gpr_names[tmp.rt], gpr_names[tmp.rd]);
         break;
         case MFHI:
-        op->dst = r_anal_value_new();
-        op->src[0] = r_anal_value_new();
-        op->dst->reg = r_reg_get (anal->reg, gpr_names[tmp.rd], R_REG_TYPE_GPR);
-        op->src[0]->reg = r_reg_get (anal->reg, "hi", R_REG_TYPE_GPR);
+        op->dsts = r_anal_value_new();
+        op->srcs[0] = r_anal_value_new();
+        op->dsts->reg = r_reg_get (anal->reg, gpr_names[tmp.rd], R_REG_TYPE_GPR);
+        op->srcs[0]->reg = r_reg_get (anal->reg, "hi", R_REG_TYPE_GPR);
         op->type = R_ANAL_OP_TYPE_MOV;
         r_strbuf_setf (&op->esil, "hi,%s,=", gpr_names[tmp.rd]);
         break;
         case MFLO:
-        op->dst = r_anal_value_new();
-        op->src[0] = r_anal_value_new();
-        op->dst->reg = r_reg_get (anal->reg, gpr_names[tmp.rd], R_REG_TYPE_GPR);
-        op->src[0]->reg = r_reg_get (anal->reg, "lo", R_REG_TYPE_GPR);
+        op->dsts = r_anal_value_new();
+        op->srcs[0] = r_anal_value_new();
+        op->dsts->reg = r_reg_get (anal->reg, gpr_names[tmp.rd], R_REG_TYPE_GPR);
+        op->srcs[0]->reg = r_reg_get (anal->reg, "lo", R_REG_TYPE_GPR);
         op->type = R_ANAL_OP_TYPE_MOV;
         r_strbuf_setf (&op->esil, "lo,%s,=", gpr_names[tmp.rd]);
         break;
         case MTHI:
-        op->dst = r_anal_value_new();
-        op->src[0] = r_anal_value_new();
-        op->dst->reg = r_reg_get (anal->reg, "hi", R_REG_TYPE_GPR);
-        op->src[0]->reg = r_reg_get (anal->reg, gpr_names[tmp.rd], R_REG_TYPE_GPR);
+        op->dsts = r_anal_value_new();
+        op->srcs[0] = r_anal_value_new();
+        op->dsts->reg = r_reg_get (anal->reg, "hi", R_REG_TYPE_GPR);
+        op->srcs[0]->reg = r_reg_get (anal->reg, gpr_names[tmp.rd], R_REG_TYPE_GPR);
         op->type = R_ANAL_OP_TYPE_MOV;
         r_strbuf_setf (&op->esil, "%s,hi,=", gpr_names[tmp.rd]);
         break;
         case MTLO:
-        op->dst = r_anal_value_new();
-        op->src[0] = r_anal_value_new();
-        op->dst->reg = r_reg_get (anal->reg, "lo", R_REG_TYPE_GPR);
-        op->src[0]->reg = r_reg_get (anal->reg, gpr_names[tmp.rd], R_REG_TYPE_GPR);
+        op->dsts = r_anal_value_new();
+        op->srcs[0] = r_anal_value_new();
+        op->dsts->reg = r_reg_get (anal->reg, "lo", R_REG_TYPE_GPR);
+        op->srcs[0]->reg = r_reg_get (anal->reg, gpr_names[tmp.rd], R_REG_TYPE_GPR);
         op->type = R_ANAL_OP_TYPE_MOV;
         r_strbuf_setf (&op->esil, "%s,loh,=", gpr_names[tmp.rd]);
         break;
         case MFHI1:
-        op->dst = r_anal_value_new();
-        op->src[0] = r_anal_value_new();
-        op->dst->reg = r_reg_get (anal->reg, gpr_names[tmp.rd], R_REG_TYPE_GPR);
-        op->src[0]->reg = r_reg_get (anal->reg, "hih", R_REG_TYPE_GPR);
+        op->dsts = r_anal_value_new();
+        op->srcs[0] = r_anal_value_new();
+        op->dsts->reg = r_reg_get (anal->reg, gpr_names[tmp.rd], R_REG_TYPE_GPR);
+        op->srcs[0]->reg = r_reg_get (anal->reg, "hih", R_REG_TYPE_GPR);
         op->type = R_ANAL_OP_TYPE_MOV;
         r_strbuf_setf (&op->esil, "hih,%s,=", gpr_names[tmp.rd]);
         break;
         case MFLO1:
-        op->dst = r_anal_value_new();
-        op->src[0] = r_anal_value_new();
-        op->dst->reg = r_reg_get (anal->reg, gpr_names[tmp.rd], R_REG_TYPE_GPR);
-        op->src[0]->reg = r_reg_get (anal->reg, "loh", R_REG_TYPE_GPR);
+        op->dsts = r_anal_value_new();
+        op->srcs[0] = r_anal_value_new();
+        op->dsts->reg = r_reg_get (anal->reg, gpr_names[tmp.rd], R_REG_TYPE_GPR);
+        op->srcs[0]->reg = r_reg_get (anal->reg, "loh", R_REG_TYPE_GPR);
         op->type = R_ANAL_OP_TYPE_MOV;
         r_strbuf_setf (&op->esil, "loh,%s,=", gpr_names[tmp.rd]);
         break;
         case MTHI1:
-        op->dst = r_anal_value_new();
-        op->src[0] = r_anal_value_new();
-        op->dst->reg = r_reg_get (anal->reg, "hih", R_REG_TYPE_GPR);
-        op->src[0]->reg = r_reg_get (anal->reg, gpr_names[tmp.rd], R_REG_TYPE_GPR);
+        op->dsts = r_anal_value_new();
+        op->srcs[0] = r_anal_value_new();
+        op->dsts->reg = r_reg_get (anal->reg, "hih", R_REG_TYPE_GPR);
+        op->srcs[0]->reg = r_reg_get (anal->reg, gpr_names[tmp.rd], R_REG_TYPE_GPR);
         op->type = R_ANAL_OP_TYPE_MOV;
         r_strbuf_setf (&op->esil, "%s,hih,=", gpr_names[tmp.rd]);
         break;
         case MTLO1:
-        op->dst = r_anal_value_new();
-        op->src[0] = r_anal_value_new();
-        op->dst->reg = r_reg_get (anal->reg, "loh", R_REG_TYPE_GPR);
-        op->src[0]->reg = r_reg_get (anal->reg, gpr_names[tmp.rd], R_REG_TYPE_GPR);
+        op->dsts = r_anal_value_new();
+        op->srcs[0] = r_anal_value_new();
+        op->dsts->reg = r_reg_get (anal->reg, "loh", R_REG_TYPE_GPR);
+        op->srcs[0]->reg = r_reg_get (anal->reg, gpr_names[tmp.rd], R_REG_TYPE_GPR);
         op->type = R_ANAL_OP_TYPE_MOV;
         r_strbuf_setf (&op->esil, "%s,loh,=", gpr_names[tmp.rd]);
         break;
         case MTC1:
-        //op->dst = r_anal_value_new();
-        //op->src[0] = r_anal_value_new();
-        //op->dst->reg = r_reg_get (anal->reg, "") // TODO: update register spec
+        //op->dsts = r_anal_value_new();
+        //op->srcs[0] = r_anal_value_new();
+        //op->dsts->reg = r_reg_get (anal->reg, "") // TODO: update register spec
         op->type = R_ANAL_OP_TYPE_MOV;
         break;
         case SYNC:
